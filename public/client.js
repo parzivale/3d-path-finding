@@ -8,6 +8,7 @@ let controls, pointer, raycaster, keycode = 81;
 let rollOverMesh, rollOverMaterial;
 let cubeGeo;;
 const objects = [];
+const points = []
 
 init();
 render();
@@ -91,11 +92,25 @@ function onPointerDown(event) {
 			}
 				break;
 			case 87: {
-				createNewBlock(intersect,0x27AE60)
+				let i = points.findIndex(element => element.name == "start");
+				console.log(i);
+				if(i == -1){
+					CreateEndPoint(intersect,0x27AE60, "start");
+				} else {
+					points[i].position.copy(intersect.point).add(intersect.face.normal);
+					points[i].position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+				}
 			}
 				break;
 			case 69: {
-				createNewBlock(intersect,0xE67E22)
+				let i = points.findIndex(element => element.name == "end");
+				console.log(i);
+				if(i == -1){
+					CreateEndPoint(intersect,0xE67E22, "end");
+				} else {
+					points[i].position.copy(intersect.point).add(intersect.face.normal);
+					points[i].position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+				}
 			}
 				break;
 			default: {
@@ -119,12 +134,23 @@ function render() {
 }
 
 function createNewBlock(intersect,color) {
-	let matt = new THREE.MeshBasicMaterial({color:color})
+	let matt = new THREE.MeshBasicMaterial({color:color});
 	let voxel = new THREE.Mesh(cubeGeo, matt);
 	voxel.position.copy(intersect.point).add(intersect.face.normal);
 	voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+
 	scene.add(voxel);
-	objects.push(voxel)
+	objects.push(voxel);
+}
+
+function CreateEndPoint(intersect,color,name) {
+	let matt = new THREE.MeshBasicMaterial({color:color});
+	let voxel = new THREE.Mesh(cubeGeo, matt);
+	voxel.position.copy(intersect.point).add(intersect.face.normal);
+	voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+	voxel.name = name;
+	scene.add(voxel);
+	points.push(voxel);
 }
 
 function checkIntersections(event,pointer,camera) {
