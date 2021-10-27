@@ -11,5 +11,8 @@
   "dependencies": {
     "express": "^4.17.1",
     "three": "^0.133.1"
+  },
+  "devDependencies": {
+    "mocha": "^9.1.3"
   }
 }

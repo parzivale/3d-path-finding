@@ -1,14 +1,17 @@
 import * as THREE from '../build/three.module.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
+import { Material } from 'three';
 let camera, scene, renderer;
 let plane;
-let pointer, raycaster, isShiftDown = false;
+let controls, pointer, raycaster, keycode = 81;
 let rollOverMesh, rollOverMaterial;
-let cubeGeo, cubeMaterial;
+let cubeGeo;;
 const objects = [];
 
 init();
 render();
+
 function init() {
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
 	camera.position.set(500, 800, 1300);
@@ -22,19 +25,19 @@ function init() {
 	scene.add(rollOverMesh);
 	// cubes
 	cubeGeo = new THREE.BoxGeometry(50, 50, 50);
-	cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c });
+
 	// grid
 	const gridHelper = new THREE.GridHelper(1000, 20);
 	scene.add(gridHelper);
-	//
+	//raycast
 	raycaster = new THREE.Raycaster();
 	pointer = new THREE.Vector2();
 	const geometry = new THREE.PlaneGeometry(1000, 1000);
 	geometry.rotateX(- Math.PI / 2);
-	plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }));
+	plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }));	
 	scene.add(plane);
 	objects.push(plane);
-	// lights
+	//
 	const ambientLight = new THREE.AmbientLight(0x606060);
 	scene.add(ambientLight);
 	const directionalLight = new THREE.DirectionalLight(0xffffff);
@@ -43,70 +46,89 @@ function init() {
 	renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.setPixelRatio(window.devicePixelRatio);
 	renderer.setSize(window.innerWidth, window.innerHeight);
-	document.body.appendChild(renderer.domElement);
+	const canvasDiv = document.getElementById("canvas-div");
+	canvasDiv.appendChild(renderer.domElement);
+	controls = new OrbitControls(camera, renderer.domElement)
 	document.addEventListener('pointermove', onPointerMove);
 	document.addEventListener('pointerdown', onPointerDown);
 	document.addEventListener('keydown', onDocumentKeyDown);
-	document.addEventListener('keyup', onDocumentKeyUp);
 	//
 	window.addEventListener('resize', onWindowResize);
-	const controls = new OrbitControls(camera, renderer.domElement)
 }
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
 function onPointerMove(event) {
-	pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
-	raycaster.setFromCamera(pointer, camera);
-	const intersects = raycaster.intersectObjects(objects, false);
+	const intersects = checkIntersections(event,pointer,camera)
+
 	if (intersects.length > 0) {
 		const intersect = intersects[0];
+		controls.enableRotate = false;
 		rollOverMesh.position.copy(intersect.point).add(intersect.face.normal);
 		rollOverMesh.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+	}
+	else if(intersects.length == 0){
+		controls.enableRotate = true;
 	}
 	render();
 }
 function onPointerDown(event) {
-	pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
-	raycaster.setFromCamera(pointer, camera);
-	const intersects = raycaster.intersectObjects(objects, false);
+	const intersects = checkIntersections(event,pointer,camera);
 	if (intersects.length > 0) {
 		const intersect = intersects[0];
-		// delete cube
-		if (isShiftDown) {
-			if (intersect.object !== plane) {
-				scene.remove(intersect.object);
-				objects.splice(objects.indexOf(intersect.object), 1);
+		switch (keycode) {
+			case 16:
+				if (intersect.object !== plane) {
+					scene.remove(intersect.object);
+					objects.splice(objects.indexOf(intersect.object), 1);
+				}
+				break;
+			case 81: {
+				createNewBlock(intersect,0xB03A2E)
 			}
-			// create cube
-		} else {
-			const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
-			voxel.position.copy(intersect.point).add(intersect.face.normal);
-			voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
-			scene.add(voxel);
-			objects.push(voxel);
+				break;
+			case 87: {
+				createNewBlock(intersect,0x27AE60)
+			}
+				break;
+			case 69: {
+				createNewBlock(intersect,0xE67E22)
+			}
+				break;
+			default: {
+				createNewBlock(intersect,0xB03A2E)
+			}
+				break;
 		}
-		render();
 	}
+	render()
 }
+
+
+
 function onDocumentKeyDown(event) {
-	switch (event.keyCode) {
-		case 16: isShiftDown = true; break;
-	}
+	console.log(event.keyCode)
+	keycode = event.keyCode
 }
-function onDocumentKeyUp(event) {
-	switch (event.keyCode) {
-		case 16: isShiftDown = false; break;
-	}
-}
+
 function render() {
 	renderer.render(scene, camera);
 }
 
-function animte(){
-	requestAnimationFrame(animate)
-	controls.update()
+function createNewBlock(intersect,color) {
+	let matt = new THREE.MeshBasicMaterial({color:color})
+	let voxel = new THREE.Mesh(cubeGeo, matt);
+	voxel.position.copy(intersect.point).add(intersect.face.normal);
+	voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+	scene.add(voxel);
+	objects.push(voxel)
 }
-animate()
+
+function checkIntersections(event,pointer,camera) {
+	pointer.set((event.clientX / window.innerWidth) * 2 - 1, - (event.clientY / window.innerHeight) * 2 + 1);
+	raycaster.setFromCamera(pointer, camera);
+	return raycaster.intersectObjects(objects, false);
+}
