@@ -1,33 +1,20 @@
 import * as THREE from '../build/three.module.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
+import { utilities } from './utlities.js';
 import * as pathfinding from "./pathfinding.js"
 let camera, scene, renderer;
 let plane;
-let controls, gui, pointer, raycaster, keycode;
-let cubeChoice = {"obstacle":true,"start":false,"end":false,"del":false};
+let pointer, raycaster;
 let rollOverMesh, rollOverMaterial;
 let cubeGeo;
-let drawing = {"enabled":true};
+let utility;
 const objects = [];
-
-let utilites = {
-
-	"drawing" : {"enabled":false},
-
-	"clear": function(objects){
-        objects.forEach(element => {
-            scene.remove(element);
-            render();
-        });
-    	}
-}
 
 
 init();
 render();
 
 function init() {
+
 	//camera/scene
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.set(500, 800, 1300);
@@ -35,6 +22,7 @@ function init() {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xf0f0f0);
 	
+
 	// roll-over helpers
 	const rollOverGeo = new THREE.BoxGeometry(50, 50, 50);
 	rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
@@ -71,28 +59,8 @@ function init() {
 	const div = document.getElementById("render-div");
 	div.appendChild(renderer.domElement);
 
-	//orbital controls
-	utilites["controls"] = new OrbitControls(camera, renderer.domElement);
-	utilites.controls.zoomSpeed = 0.5;
-	
-	//utilities
-
-
-	//gui
-	gui = new GUI()
-	const cubesFolder = gui.addFolder("Cubes");
-	cubesFolder.add(cubeChoice, "obstacle").listen();
-	cubesFolder.add(cubeChoice, "start").listen();
-	cubesFolder.add(cubeChoice, "end").listen();
-	cubesFolder.add(cubeChoice, "del").listen();
-	const utilitesFolder = gui.addFolder("utilities")
-	utilitesFolder.add(utilites.controls, "enabled").name("Enable movement").listen().onChange(() => {utilites.drawing.enabled = false; utilites.controls.enabled = true;});
-	utilitesFolder.add(utilites.drawing, "enabled").name("Enable drawing").listen().onChange(() => {utilites.controls.enabled = false; utilites.drawing.enabled = true;});
-	utilitesFolder.add(utilites, "clear");
-	utilitesFolder.open()
-	cubesFolder.open()
-	gui.show()
-
+	//utilities, i.e orbital controls, selection state etc
+	utility = new utilities(camera, renderer, scene, objects)
 	//
 	document.addEventListener('pointermove', onPointerMove);
 	document.addEventListener('pointerup', onPointerUp);
@@ -109,6 +77,8 @@ function onWindowResize() {
 }
 
 function onPointerMove(event) {
+
+	//moves the rollover mesh(3d cursor) to a new position on cursor move
 	rollOverMaterial.visible = true;
 
 	const intersects = checkIntersections(event,pointer,camera)
@@ -120,27 +90,30 @@ function onPointerMove(event) {
 		rollOverMesh.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
 
 	}
-
+	//render is necesarry as there is no draw call loop
 	render();
-
 }
 function onPointerUp(event) {
-	if(utilites.drawing.enabled){
+	//checks if the user can draw and if the raycast hit anything
+	console.log(utility.cubeChoice)
+	if(utility.drawing.enabled){
 		const intersects = checkIntersections(event,pointer,camera);
 		if (intersects.length > 0) {
 			const intersect = intersects[0];
+
+			//depending on whether UTILITES.CUBECHOICE.x is true create a different cube at that location
 			switch (true) {	
-				case cubeChoice.del:
+				case utility.cubeChoice.del:
 					if (intersect.object !== plane) {
 						scene.remove(intersect.object);
 						objects.splice(objects.indexOf(intersect.object), 1);
 					}
 					break;
-				case cubeChoice.obstacle: {
+				case utility.cubeChoice.obstacle: {
 					createNewBlock(intersect,0xB03A2E)
 				}
 					break;
-				case cubeChoice.start: {
+				case utility.cubeChoice.start: {
 					let i = objects.findIndex(element => element.name == "start");
 					if(i == -1){
 						CreateEndPoint(intersect,0x27AE60, "start");
@@ -150,7 +123,7 @@ function onPointerUp(event) {
 					}
 				}
 					break;		
-				case cubeChoice.end: {
+				case utility.cubeChoice.end: {
 					let i = objects.findIndex(element => element.name == "end");
 					if(i == -1){
 						CreateEndPoint(intersect,0xE67E22, "end");
@@ -163,60 +136,19 @@ function onPointerUp(event) {
 			}
 		}
 	}
+	//render is necesarry as there is no draw call loop
 	render()
 }
  
 function onDocumentKeyDown(event) {
-	keycode = event.keyCode
-	switch (keycode){
-		case 82:{
-				utilites.controls.enabled = true;
-				utilites.drawing.enabled = false;
-			break;
-		}
-		case 84:{
-			utilites.drawing.enabled = true;
-			utilites.controls.enabled = false;
-		}
-		case 81:{
-			for(let element in cubeChoice){
-				cubeChoice[element] = false;
-			}
-			cubeChoice.obstacle = true;
-			break;
-		}
-		case 87:{
-			for(let element in cubeChoice){
-				cubeChoice[element] = false;
-			}
-			cubeChoice.start = true;
-			break;
-		}
-		case 69:{
-			for(let element in cubeChoice){
-				cubeChoice[element] = false;
-			}
-			cubeChoice.end = true;
-			break;
-		}
-		case 16:{
-			for(let element in cubeChoice){
-				cubeChoice[element] = false;
-			}
-			cubeChoice.del = true;
-			break;
-		}
-		case 89:{
-			utilites.clear(objects);
-		}
-	}
+	//stores the last key that was pressed
+	utility.keycode = event.keyCode;
+	utility.checkKey();
 }
 
 function render() {
 	renderer.render(scene, camera);
 }
-
-
 
 function createNewBlock(intersect,color) {
 	let matt = new THREE.MeshBasicMaterial({color:color});
@@ -228,6 +160,7 @@ function createNewBlock(intersect,color) {
 	objects.push(voxel);
 }
 
+//similar to create new point but creates a endpoint for path finding
 function CreateEndPoint(intersect,color,name) {
 	let matt = new THREE.MeshBasicMaterial({color:color});
 	let voxel = new THREE.Mesh(cubeGeo, matt);
