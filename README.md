@@ -11,7 +11,7 @@ A pathfinding visualizer like no other! Based on three.js this visualizer uses v
 
 ## Installation
 
-Clone this repo and run sh```npm start``` it should prompt you with a link to http://127.0.0.1:3000
+Clone this repo and run ```sh npm start``` it should prompt you with a link to http://127.0.0.1:3000
 
 ## Usage
 
