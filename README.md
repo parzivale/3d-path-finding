@@ -15,7 +15,7 @@ Clone this repo and run ```npm start``` it should prompt you with a link to http
 
 ## Usage
 
-Build up obstacles with the red voxels and set a begging and end with the green and red voxels respectivly, when ready hit start and watch it go!
+Build up obstacles with the red voxels and set a beginning and end with the green and red voxels respectively, when ready hit start and watch it go!
 
 ## Support
 
