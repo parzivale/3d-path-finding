@@ -1,6 +1,6 @@
-# README Boilerplate
+# PathFinding in 3d!
 
-A template of README best practices to make your README simple to understand and easy to use. 
+A pathfinding visualizer like no other! Based on three.js this visualizer uses voxles to show some of the most common path finding algorithims in computer science working in 3d!
 
 ## Table of Contents
 
