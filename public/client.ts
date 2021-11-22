@@ -1,6 +1,7 @@
 import * as THREE from '../build/three.module.js';
 import { utilities } from './utlities.js';
-import * as pathfinding from "./pathfinding.js"
+import * as pathfinding from "./pathfinding.js";
+
 let camera, scene, renderer;
 let plane;
 let pointer, raycaster;
@@ -93,10 +94,10 @@ function onPointerMove(event) {
 	//render is necesarry as there is no draw call loop
 	render();
 }
+
 function onPointerUp(event) {
 	//checks if the user can draw and if the raycast hit anything
-	console.log(utility.cubeChoice)
-	if(utility.drawing.enabled){
+		if(utility.drawing.enabled){
 		const intersects = checkIntersections(event,pointer,camera);
 		if (intersects.length > 0) {
 			const intersect = intersects[0];
@@ -137,7 +138,7 @@ function onPointerUp(event) {
 		}
 	}
 	//render is necesarry as there is no draw call loop
-	render()
+	render();
 }
  
 function onDocumentKeyDown(event) {
@@ -166,6 +167,7 @@ function CreateEndPoint(intersect,color,name) {
 	let voxel = new THREE.Mesh(cubeGeo, matt);
 	voxel.position.copy(intersect.point).add(intersect.face.normal);
 	voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25);
+
 	voxel.name = name;
 	scene.add(voxel);
 	objects.push(voxel);

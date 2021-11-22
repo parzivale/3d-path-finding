@@ -45,9 +45,14 @@ class utilities{
     //clears all voxels from the screen
     clear(){
         for(let element in this.objects){
-            this.scene.remove(this.objects[element]);   
+            
+            this.scene.remove(this.objects[element]);
             this.render();
         }
+        this.objects ;
+        let plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }));	
+	    this.scene.add(plane);
+	    this.objects.push(plane);
     }
     
     //changes the state of cubeChoice for DAT.GUI, key refers to object key and not keypress
